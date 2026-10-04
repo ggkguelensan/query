@@ -42,6 +42,34 @@ describe('infiniteQueryObserver', () => {
     queryClient.clear()
   })
 
+  it('should preserve infinite options when reading and updating the observer', () => {
+    type Options = InfiniteQueryObserverOptions<
+      { value: number },
+      CustomError,
+      Array<string>,
+      readonly ['pages'],
+      number
+    >
+    const options: Options = {
+      queryKey: ['pages'],
+      queryFn: ({ pageParam }) => ({ value: pageParam }),
+      initialPageParam: 0,
+      getNextPageParam: (_last, _pages, lastPageParam) => lastPageParam + 1,
+      select: (data) => data.pages.map((page) => String(page.value)),
+    }
+    const observer = new InfiniteQueryObserver(queryClient, options)
+
+    expectTypeOf(observer.options).toEqualTypeOf<Options>()
+    expectTypeOf(observer.options.initialPageParam).toEqualTypeOf<number>()
+    const getNextPageParam = observer.options.getNextPageParam
+    expectTypeOf(getNextPageParam).toEqualTypeOf<
+      GetNextPageParamFunction<number, { value: number }>
+    >()
+    observer.setOptions(observer.options)
+    // @ts-expect-error the observer requires its numeric page parameter
+    observer.setOptions({ ...observer.options, initialPageParam: 'wrong' })
+  })
+
   describe('InfiniteQueryObserverOptions', () => {
     it('should keep every option writable', () => {
       type Options = InfiniteQueryObserverOptions<
@@ -1034,7 +1062,7 @@ describe('infiniteQueryObserver', () => {
   })
 
   describe('options', () => {
-    it('should leave the page param of the queryFn context unknown', () => {
+    it('should preserve the page param and direction of the queryFn context', () => {
       const observer = new InfiniteQueryObserver(queryClient, {
         queryKey: queryKey(),
         queryFn: () => Promise.resolve({ value: 'data' }),
@@ -1046,8 +1074,10 @@ describe('infiniteQueryObserver', () => {
         Extract<typeof observer.options.queryFn, Function>
       >[0]
 
-      expectTypeOf<Context['pageParam']>().toEqualTypeOf<unknown>()
-      expectTypeOf<Context['direction']>().toEqualTypeOf<unknown>()
+      expectTypeOf<Context['pageParam']>().toEqualTypeOf<number>()
+      expectTypeOf<Context['direction']>().toEqualTypeOf<
+        'forward' | 'backward'
+      >()
     })
 
     it('should expose the paged data type through the options it holds', () => {

@@ -20,6 +20,27 @@ describe('InfiniteQueryObserver', () => {
     vi.useRealTimers()
   })
 
+  it('should retain infinite options after construction and updates', () => {
+    const getNextPageParam = (
+      _last: number,
+      _pages: Array<number>,
+      page: number,
+    ) => page + 1
+    const observer = new InfiniteQueryObserver(queryClient, {
+      queryKey: queryKey(),
+      queryFn: ({ pageParam }) => pageParam,
+      initialPageParam: 0,
+      getNextPageParam,
+    })
+
+    expect(observer.options.initialPageParam).toBe(0)
+    expect(observer.options.getNextPageParam).toBe(getNextPageParam)
+    observer.setOptions({ ...observer.options, initialPageParam: 10 })
+    expect(observer.options.initialPageParam).toBe(10)
+    expect(observer.options.getNextPageParam).toBe(getNextPageParam)
+    expect(observer.options.queryHash).toBeDefined()
+  })
+
   it('should be able to fetch an infinite query with selector', async () => {
     const key = queryKey()
     const observer = new InfiniteQueryObserver(queryClient, {

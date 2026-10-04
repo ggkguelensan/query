@@ -51,6 +51,14 @@ export class InfiniteQueryObserver<
   InfiniteData<TQueryFnData, TPageParam>,
   TQueryKey
 > {
+  declare options: InfiniteQueryObserverOptions<
+    TQueryFnData,
+    TError,
+    TData,
+    TQueryKey,
+    TPageParam
+  >
+
   // Type override
   subscribe!: Subscribable<
     InfiniteQueryObserverListener<TData, TError>
